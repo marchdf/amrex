@@ -198,9 +198,26 @@ MLCGSolverT<MF>::solve_bicgstab (MF& sol, const MF& rhs, RT eps_rel, RT eps_abs)
         {
             ret = 2; break;
         }
-        // another candidate??
-        Saxpy(sol, alpha, p, 0, 0, ncomp, nghost); // sol += alpha * p
-        Saxpy(r,  -alpha, v, 0, 0, ncomp, nghost); // r += -alpha * v
+        // Saxpy(sol, alpha, p, 0, 0, ncomp, nghost); // sol += alpha * p
+        // Saxpy(r,  -alpha, v, 0, 0, ncomp, nghost); // r += -alpha * v
+
+        auto const& yma_1 = sol.arrays();
+        auto const& yma_2 = r.arrays();
+        auto const a_1 = alpha;
+        auto const a_2 = -alpha;
+        auto const& xma_1 = p.const_arrays();
+        auto const& xma_2 = v.const_arrays();
+        int xcomp = 0;
+        int ycomp = 0;
+
+        ParallelFor(sol, nghost, ncomp,
+        [=] AMREX_GPU_DEVICE (int box_no, int i, int j, int k, int n) noexcept
+        {
+            // Saxpy 1
+            yma_1[box_no](i,j,k,ycomp+n) += a_1 * xma_1[box_no](i,j,k,xcomp+n);
+            // Saxpy 2
+            yma_2[box_no](i,j,k,ycomp+n) += a_2 * xma_2[box_no](i,j,k,xcomp+n);
+        });
 
         rnorm = norm_inf(r);
 
@@ -235,8 +252,26 @@ MLCGSolverT<MF>::solve_bicgstab (MF& sol, const MF& rhs, RT eps_rel, RT eps_abs)
         {
             ret = 3; break;
         }
-        Saxpy(sol, omega, r, 0, 0, ncomp, nghost); // sol += omega * r
-        Saxpy(r,  -omega, t, 0, 0, ncomp, nghost); // r += -omega * t
+        // Saxpy(sol, omega, r, 0, 0, ncomp, nghost); // sol += omega * r
+        // Saxpy(r,  -omega, t, 0, 0, ncomp, nghost); // r += -omega * t
+
+        auto const& yma_3 = sol.arrays();
+        auto const& yma_4 = r.arrays();
+        auto const a_3 = omega;
+        auto const a_4 = -omega;
+        auto const& xma_3 = r.const_arrays();
+        auto const& xma_4 = t.const_arrays();
+        xcomp = 0;
+        ycomp = 0;
+
+        ParallelFor(sol, nghost, ncomp,
+        [=] AMREX_GPU_DEVICE (int box_no, int i, int j, int k, int n) noexcept
+        {
+            // Saxpy 1
+            yma_3[box_no](i,j,k,ycomp+n) += a_3 * xma_3[box_no](i,j,k,xcomp+n);
+            // Saxpy
+            yma_4[box_no](i,j,k,ycomp+n) += a_4 * xma_4[box_no](i,j,k,xcomp+n);
+        });
 
         rnorm = norm_inf(r);
 
