@@ -175,6 +175,8 @@ MLCGSolverT<MF>::solve_bicgstab (MF& sol, const MF& rhs, RT eps_rel, RT eps_abs)
             int const xcomp = 0;
             int const ycomp = 0;
 
+            {
+            BL_PROFILE("Combined Saxpy+Xpay");
             ParallelFor(p, nghost, ncomp,
             [=] AMREX_GPU_DEVICE (int box_no, int i, int j, int k, int n) noexcept
             {
@@ -184,6 +186,7 @@ MLCGSolverT<MF>::solve_bicgstab (MF& sol, const MF& rhs, RT eps_rel, RT eps_abs)
                 yma[box_no](i,j,k,n+ycomp) = xma_xpay[box_no](i,j,k,n+xcomp)
                     +                    a_xpay * yma[box_no](i,j,k,n+ycomp);
             });
+            }
 
         }
         Lp.apply(amrlev, mglev, v, p, MLLinOpT<MF>::BCMode::Homogeneous, MLLinOpT<MF>::StateMode::Correction);
@@ -210,6 +213,8 @@ MLCGSolverT<MF>::solve_bicgstab (MF& sol, const MF& rhs, RT eps_rel, RT eps_abs)
         int xcomp = 0;
         int ycomp = 0;
 
+        {
+        BL_PROFILE("Combined Saxpy+Saxpy 1");
         ParallelFor(sol, nghost, ncomp,
         [=] AMREX_GPU_DEVICE (int box_no, int i, int j, int k, int n) noexcept
         {
@@ -218,6 +223,7 @@ MLCGSolverT<MF>::solve_bicgstab (MF& sol, const MF& rhs, RT eps_rel, RT eps_abs)
             // Saxpy 2
             yma_2[box_no](i,j,k,ycomp+n) += a_2 * xma_2[box_no](i,j,k,xcomp+n);
         });
+        }
 
         rnorm = norm_inf(r);
 
@@ -264,6 +270,8 @@ MLCGSolverT<MF>::solve_bicgstab (MF& sol, const MF& rhs, RT eps_rel, RT eps_abs)
         xcomp = 0;
         ycomp = 0;
 
+        {
+        BL_PROFILE("Combined Saxpy+Saxpy 2");
         ParallelFor(sol, nghost, ncomp,
         [=] AMREX_GPU_DEVICE (int box_no, int i, int j, int k, int n) noexcept
         {
@@ -272,6 +280,7 @@ MLCGSolverT<MF>::solve_bicgstab (MF& sol, const MF& rhs, RT eps_rel, RT eps_abs)
             // Saxpy
             yma_4[box_no](i,j,k,ycomp+n) += a_4 * xma_4[box_no](i,j,k,xcomp+n);
         });
+        }
 
         rnorm = norm_inf(r);
 
