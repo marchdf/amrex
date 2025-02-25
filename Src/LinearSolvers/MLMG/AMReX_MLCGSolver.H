@@ -164,8 +164,27 @@ MLCGSolverT<MF>::solve_bicgstab (MF& sol, const MF& rhs, RT eps_rel, RT eps_abs)
         else
         {
             const RT beta = (rho/rho_1)*(alpha/omega);
-            Saxpy(p, -omega, v, 0, 0, ncomp, nghost); // p += -omega*v
-            Xpay(p, beta, r, 0, 0, ncomp, nghost); // p = r + beta*p
+            // Saxpy(p, -omega, v, 0, 0, ncomp, nghost); // p += -omega*v
+            // Xpay(p, beta, r, 0, 0, ncomp, nghost); // p = r + beta*p
+
+            auto const& yma = p.arrays();
+            auto const a_saxpy = -omega;
+            auto const a_xpay = beta;
+            auto const& xma_saxpy = v.const_arrays();
+            auto const& xma_xpay = r.const_arrays();
+            int const xcomp = 0;
+            int const ycomp = 0;
+
+            ParallelFor(p, nghost, ncomp,
+            [=] AMREX_GPU_DEVICE (int box_no, int i, int j, int k, int n) noexcept
+            {
+                // Saxpy
+                yma[box_no](i,j,k,ycomp+n) += a_saxpy * xma_saxpy[box_no](i,j,k,xcomp+n);
+                // Xpay
+                yma[box_no](i,j,k,n+ycomp) = xma_xpay[box_no](i,j,k,n+xcomp)
+                    +                    a_xpay * yma[box_no](i,j,k,n+ycomp);
+            });
+
         }
         Lp.apply(amrlev, mglev, v, p, MLLinOpT<MF>::BCMode::Homogeneous, MLLinOpT<MF>::StateMode::Correction);
         Lp.normalize(amrlev, mglev, v);
@@ -179,6 +198,7 @@ MLCGSolverT<MF>::solve_bicgstab (MF& sol, const MF& rhs, RT eps_rel, RT eps_abs)
         {
             ret = 2; break;
         }
+        // another candidate??
         Saxpy(sol, alpha, p, 0, 0, ncomp, nghost); // sol += alpha * p
         Saxpy(r,  -alpha, v, 0, 0, ncomp, nghost); // r += -alpha * v
 
