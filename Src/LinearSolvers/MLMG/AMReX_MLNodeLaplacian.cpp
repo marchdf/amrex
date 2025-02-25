@@ -883,7 +883,9 @@ MLNodeLaplacian::normalize (int amrlev, int mglev, MultiFab& mf) const
                 mlndlap_normalize_aa(i,j,k,ma[box_no],sx_ma[box_no],dmsk_ma[box_no],dxinv);
             });
         }
-        Gpu::streamSynchronize();
+        if (!Gpu::inNoSyncRegion()) {
+            Gpu::streamSynchronize();
+        }
     } else
 #endif
     {

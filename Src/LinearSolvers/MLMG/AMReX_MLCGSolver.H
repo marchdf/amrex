@@ -98,7 +98,7 @@ int
 MLCGSolverT<MF>::solve_bicgstab (MF& sol, const MF& rhs, RT eps_rel, RT eps_abs)
 {
     BL_PROFILE("MLCGSolver::bicgstab");
-
+    Gpu::NoSyncRegion no_sync;
     const int ncomp = nComp(sol);
 
     MF p = Lp.make(amrlev, mglev, nGrowVect(sol));
