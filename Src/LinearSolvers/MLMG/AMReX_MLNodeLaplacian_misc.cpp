@@ -372,6 +372,9 @@ MLNodeLaplacian::Fsmooth (int amrlev, int mglev, MultiFab& sol, const MultiFab& 
     }
 #endif
 
+    const auto ng_grow = sol.nGrowFilled() - amrex::IntVect(1);
+    // std::cout << "Fsmooth ng_grow: " << ng_grow << std::endl;
+
     if (m_use_gauss_seidel)
     {
         if (m_coarsening_strategy == CoarseningStrategy::RAP)
@@ -382,7 +385,7 @@ MLNodeLaplacian::Fsmooth (int amrlev, int mglev, MultiFab& sol, const MultiFab& 
                 auto const& starr_ma = stencil->const_arrays();
                 for (int color = 0; color < AMREX_D_TERM(2,*2,*2); ++color)
                 {
-                    ParallelFor(sol, [=] AMREX_GPU_DEVICE (int box_no, int i, int j, int k) noexcept
+                    ParallelFor(sol, ng_grow, [=] AMREX_GPU_DEVICE (int box_no, int i, int j, int k) noexcept
                     {
                         mlndlap_gscolor_sten(i,j,k,solarr_ma[box_no],rhsarr_ma[box_no],
                                              starr_ma[box_no],dmskarr_ma[box_no],color);
@@ -396,7 +399,7 @@ MLNodeLaplacian::Fsmooth (int amrlev, int mglev, MultiFab& sol, const MultiFab& 
 #endif
                 for (MFIter mfi(sol); mfi.isValid(); ++mfi)
                 {
-                    const Box& bx = mfi.validbox();
+                    const Box& bx = amrex::grow(mfi.validbox(),ng_grow);
                     Array4<Real> const& solarr = sol.array(mfi);
                     Array4<Real const> const& rhsarr = rhs.const_array(mfi);
                     Array4<Real const> const& starr = stencil->const_array(mfi);
@@ -415,7 +418,7 @@ MLNodeLaplacian::Fsmooth (int amrlev, int mglev, MultiFab& sol, const MultiFab& 
             if (Gpu::inLaunchRegion()) {
                 for (int color = 0; color < AMREX_D_TERM(2,*2,*2); ++color)
                 {
-                    ParallelFor(sol, [=] AMREX_GPU_DEVICE (int box_no, int i, int j, int k) noexcept
+                    ParallelFor(sol, ng_grow, [=] AMREX_GPU_DEVICE (int box_no, int i, int j, int k) noexcept
                     {
                         mlndlap_gscolor_c(i,j,k, solarr_ma[box_no], rhsarr_ma[box_no],
                                           const_sigma, dmskarr_ma[box_no], dxinvarr, color
@@ -433,7 +436,7 @@ MLNodeLaplacian::Fsmooth (int amrlev, int mglev, MultiFab& sol, const MultiFab& 
 #endif
                 for (MFIter mfi(sol); mfi.isValid(); ++mfi)
                 {
-                    const Box& bx = mfi.validbox();
+                    const Box& bx = amrex::grow(mfi.validbox(), ng_grow);
                     Array4<Real> const& solarr = sol.array(mfi);
                     Array4<Real const> const& rhsarr = rhs.const_array(mfi);
                     Array4<int const> const& dmskarr = dmsk.const_array(mfi);
@@ -459,7 +462,7 @@ MLNodeLaplacian::Fsmooth (int amrlev, int mglev, MultiFab& sol, const MultiFab& 
                              MultiArray4<Real const> const& szarr_ma = sigma[2]->const_arrays(););
                 for (int color = 0; color < AMREX_D_TERM(2,*2,*2); ++color)
                 {
-                    ParallelFor(sol, [=] AMREX_GPU_DEVICE (int box_no, int i, int j, int k) noexcept
+                    ParallelFor(sol, ng_grow, [=] AMREX_GPU_DEVICE (int box_no, int i, int j, int k) noexcept
                     {
                         mlndlap_gscolor_ha(i,j,k, solarr_ma[box_no], rhsarr_ma[box_no],
                                            AMREX_D_DECL(sxarr_ma[box_no],syarr_ma[box_no],szarr_ma[box_no]),
@@ -479,7 +482,7 @@ MLNodeLaplacian::Fsmooth (int amrlev, int mglev, MultiFab& sol, const MultiFab& 
 #endif
                 for (MFIter mfi(sol); mfi.isValid(); ++mfi)
                 {
-                    const Box& bx = mfi.validbox();
+                    const Box& bx = amrex::grow(mfi.validbox(),ng_grow);
                     AMREX_D_TERM(Array4<Real const> const& sxarr = sigma[0]->const_array(mfi);,
                                  Array4<Real const> const& syarr = sigma[1]->const_array(mfi);,
                                  Array4<Real const> const& szarr = sigma[2]->const_array(mfi););
@@ -507,7 +510,7 @@ MLNodeLaplacian::Fsmooth (int amrlev, int mglev, MultiFab& sol, const MultiFab& 
                 auto const& sarr_ma = sigma[0]->const_arrays();
                 for (int color = 0; color < AMREX_D_TERM(2,*2,*2); ++color)
                 {
-                    ParallelFor(sol, [=] AMREX_GPU_DEVICE (int box_no, int i, int j, int k) noexcept
+                    ParallelFor(sol, ng_grow, [=] AMREX_GPU_DEVICE (int box_no, int i, int j, int k) noexcept
                     {
                         mlndlap_gscolor_aa(i,j,k, solarr_ma[box_no], rhsarr_ma[box_no],
                                            sarr_ma[box_no], dmskarr_ma[box_no], dxinvarr, color
@@ -525,7 +528,7 @@ MLNodeLaplacian::Fsmooth (int amrlev, int mglev, MultiFab& sol, const MultiFab& 
 #endif
                 for (MFIter mfi(sol); mfi.isValid(); ++mfi)
                 {
-                    const Box& bx = mfi.validbox();
+                    const Box& bx = amrex::grow(mfi.validbox(),ng_grow);
                     Array4<Real const> const& sarr = sigma[0]->const_array(mfi);
                     Array4<Real> const& solarr = sol.array(mfi);
                     Array4<Real const> const& rhsarr = rhs.const_array(mfi);
@@ -580,7 +583,7 @@ MLNodeLaplacian::Fsmooth (int amrlev, int mglev, MultiFab& sol, const MultiFab& 
             if (Gpu::inLaunchRegion())
             {
                 auto const& starr_ma = stencil->const_arrays();
-                ParallelFor(sol, [=] AMREX_GPU_DEVICE (int box_no, int i, int j, int k) noexcept
+                ParallelFor(sol, ng_grow, [=] AMREX_GPU_DEVICE (int box_no, int i, int j, int k) noexcept
                 {
                     mlndlap_jacobi_sten(i,j,k,solarr_ma[box_no],Axarr_ma[box_no](i,j,k),
                                         rhsarr_ma[box_no],starr_ma[box_no],
@@ -594,7 +597,7 @@ MLNodeLaplacian::Fsmooth (int amrlev, int mglev, MultiFab& sol, const MultiFab& 
 #endif
                 for (MFIter mfi(sol,true); mfi.isValid(); ++mfi)
                 {
-                    const Box& bx = mfi.tilebox();
+                    const Box& bx = amrex::grow(mfi.tilebox(), ng_grow);
                     Array4<Real> const& solarr = sol.array(mfi);
                     Array4<Real const> const& Axarr = Ax.const_array(mfi);
                     Array4<Real const> const& rhsarr = rhs.const_array(mfi);
@@ -611,7 +614,7 @@ MLNodeLaplacian::Fsmooth (int amrlev, int mglev, MultiFab& sol, const MultiFab& 
 #ifdef AMREX_USE_GPU
             if (Gpu::inLaunchRegion())
             {
-                ParallelFor(sol, [=] AMREX_GPU_DEVICE (int box_no, int i, int j, int k) noexcept
+                ParallelFor(sol, ng_grow, [=] AMREX_GPU_DEVICE (int box_no, int i, int j, int k) noexcept
                 {
                     mlndlap_jacobi_c(i,j,k,solarr_ma[box_no],Axarr_ma[box_no](i,j,k),
                                      rhsarr_ma[box_no],const_sigma,
@@ -625,7 +628,7 @@ MLNodeLaplacian::Fsmooth (int amrlev, int mglev, MultiFab& sol, const MultiFab& 
 #endif
                 for (MFIter mfi(sol,true); mfi.isValid(); ++mfi)
                 {
-                    const Box& bx = mfi.tilebox();
+                    const Box& bx = amrex::grow(mfi.tilebox(), ng_grow);
                     Array4<Real> const& solarr = sol.array(mfi);
                     Array4<Real const> const& Axarr = Ax.const_array(mfi);
                     Array4<Real const> const& rhsarr = rhs.const_array(mfi);
@@ -644,7 +647,7 @@ MLNodeLaplacian::Fsmooth (int amrlev, int mglev, MultiFab& sol, const MultiFab& 
                 AMREX_D_TERM(MultiArray4<Real const> const& sxarr_ma = sigma[0]->const_arrays();,
                              MultiArray4<Real const> const& syarr_ma = sigma[1]->const_arrays();,
                              MultiArray4<Real const> const& szarr_ma = sigma[2]->const_arrays(););
-                ParallelFor(sol, [=] AMREX_GPU_DEVICE (int box_no, int i, int j, int k) noexcept
+                ParallelFor(sol, ng_grow, [=] AMREX_GPU_DEVICE (int box_no, int i, int j, int k) noexcept
                 {
                     mlndlap_jacobi_ha(i,j,k,solarr_ma[box_no],Axarr_ma[box_no](i,j,k),rhsarr_ma[box_no],
                                       AMREX_D_DECL(sxarr_ma[box_no],syarr_ma[box_no],szarr_ma[box_no]),
@@ -658,7 +661,7 @@ MLNodeLaplacian::Fsmooth (int amrlev, int mglev, MultiFab& sol, const MultiFab& 
 #endif
                 for (MFIter mfi(sol,true); mfi.isValid(); ++mfi)
                 {
-                    const Box& bx = mfi.tilebox();
+                    const Box& bx = amrex::grow(mfi.tilebox(), ng_grow);
                     AMREX_D_TERM(Array4<Real const> const& sxarr = sigma[0]->const_array(mfi);,
                                  Array4<Real const> const& syarr = sigma[1]->const_array(mfi);,
                                  Array4<Real const> const& szarr = sigma[2]->const_array(mfi););
@@ -678,7 +681,7 @@ MLNodeLaplacian::Fsmooth (int amrlev, int mglev, MultiFab& sol, const MultiFab& 
             if (Gpu::inLaunchRegion())
             {
                 auto const& sarr_ma = sigma[0]->const_arrays();
-                ParallelFor(sol, [=] AMREX_GPU_DEVICE (int box_no, int i, int j, int k) noexcept
+                ParallelFor(sol, ng_grow, [=] AMREX_GPU_DEVICE (int box_no, int i, int j, int k) noexcept
                 {
                     mlndlap_jacobi_aa(i,j,k,solarr_ma[box_no],Axarr_ma[box_no](i,j,k),
                                       rhsarr_ma[box_no],sarr_ma[box_no],
@@ -692,7 +695,7 @@ MLNodeLaplacian::Fsmooth (int amrlev, int mglev, MultiFab& sol, const MultiFab& 
 #endif
                 for (MFIter mfi(sol,true); mfi.isValid(); ++mfi)
                 {
-                    const Box& bx = mfi.tilebox();
+                    const Box& bx = amrex::grow(mfi.tilebox(),ng_grow);
                     Array4<Real const> const& sarr = sigma[0]->const_array(mfi);
                     Array4<Real> const& solarr = sol.array(mfi);
                     Array4<Real const> const& Axarr = Ax.const_array(mfi);
