@@ -890,9 +890,7 @@ MLNodeLaplacian::normalize (int amrlev, int mglev, MultiFab& mf) const
             });
         }
         if (!Gpu::inNoSyncRegion()) {
-            if (!Gpu::inNoSyncRegion()) {
-              Gpu::streamSynchronize();
-            }
+          Gpu::streamSynchronize();
         }
     } else
 #endif

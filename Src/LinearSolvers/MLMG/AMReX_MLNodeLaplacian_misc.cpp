@@ -266,9 +266,7 @@ MLNodeLaplacian::Fapply (int amrlev, int mglev, MultiFab& out, const MultiFab& i
             });
         }
         if (!Gpu::inNoSyncRegion()) {
-            if (!Gpu::inNoSyncRegion()) {
-              Gpu::streamSynchronize();
-            }
+          Gpu::streamSynchronize();
         }
     } else
 #endif
