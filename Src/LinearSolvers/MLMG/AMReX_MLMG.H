@@ -1418,7 +1418,8 @@ MLMGT<MF>::mgVcycle (int amrlev, int mglev_top)
             amrex::Print() << "AT LEVEL "  << amrlev << " " << mglev
                            << "   UP: Norm before smooth " << norm << "\n";
         }
-        auto ng_valid = cor[amrlev][mglev].nGrowVect();
+        // No FillBoundary needed, consider only one ghost cell valid
+        auto ng_valid = amrex::IntVect(1);
         cor[amrlev][mglev].setNGrowFilled(ng_valid);
         for (int i = 0; i < nu2; ++i) {
             linop.smooth(amrlev, mglev, cor[amrlev][mglev], res[amrlev][mglev]);
