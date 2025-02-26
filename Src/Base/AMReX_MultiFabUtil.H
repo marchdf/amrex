@@ -101,7 +101,7 @@ namespace amrex
     //  This version takes periodicity into account.
     template <typename FAB>
     void average_down_faces (const FabArray<FAB>& fine, FabArray<FAB>& crse,
-                             const IntVect& ratio, const Geometry& crse_geom);
+                             const IntVect& ratio, const Geometry& crse_geom, bool no_wait = false);
 
     //! Average fine edge-based MultiFab onto crse edge-based MultiFab.
     void average_down_edges (const Vector<const MultiFab*>& fine,
@@ -887,7 +887,7 @@ void average_down_faces (const Array<const MF*,AMREX_SPACEDIM>& fine,
 
 template <typename FAB>
 void average_down_faces (const FabArray<FAB>& fine, FabArray<FAB>& crse,
-                         const IntVect& ratio, int ngcrse)
+                        const IntVect& ratio, int ngcrse)
 {
     BL_PROFILE("average_down_faces");
 
@@ -941,7 +941,7 @@ void average_down_faces (const FabArray<FAB>& fine, FabArray<FAB>& crse,
         FabArray<FAB> ctmp(amrex::coarsen(fine.boxArray(),ratio), fine.DistributionMap(),
                       ncomp, ngcrse, MFInfo(), DefaultFabFactory<FAB>());
         average_down_faces(fine, ctmp, ratio, ngcrse);
-        crse.ParallelCopy(ctmp,0,0,ncomp,ngcrse,ngcrse);
+        crse.ParallelCopy(ctmp, 0, 0, ncomp, ngcrse, ngcrse);
     }
 }
 
@@ -951,18 +951,27 @@ void average_down_faces (const Array<const MF*,AMREX_SPACEDIM>& fine,
                          const IntVect& ratio, const Geometry& crse_geom)
 {
     for (int idim = 0; idim < AMREX_SPACEDIM; ++idim) {
-        average_down_faces(*fine[idim], *crse[idim], ratio, crse_geom);
+        average_down_faces(*fine[idim], *crse[idim], ratio, crse_geom, true);
     }
+    for (int idim = 0; idim < AMREX_SPACEDIM; ++idim) {
+        crse[idim]->ParallelCopy_finish();
+    }  
 }
 
 template <typename FAB>
 void average_down_faces (const FabArray<FAB>& fine, FabArray<FAB>& crse,
-                         const IntVect& ratio, const Geometry& crse_geom)
+                         const IntVect& ratio, const Geometry& crse_geom, bool no_wait)
 {
     FabArray<FAB> ctmp(amrex::coarsen(fine.boxArray(),ratio), fine.DistributionMap(),
                   crse.nComp(), 0);
     average_down_faces(fine, ctmp, ratio, 0);
-    crse.ParallelCopy(ctmp,0,0,crse.nComp(),0,0,crse_geom.periodicity());
+    if (no_wait) {
+        crse.ParallelCopy_nowait(
+            ctmp, 0, 0, crse.nComp(), 0, 0, crse_geom.periodicity());
+    } else {
+        crse.ParallelCopy(
+            ctmp, 0, 0, crse.nComp(), 0, 0, crse_geom.periodicity());
+    }
 }
 
 template <typename MF, std::enable_if_t<IsFabArray<MF>::value,int> FOO>

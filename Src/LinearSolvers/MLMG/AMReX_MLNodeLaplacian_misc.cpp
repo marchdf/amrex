@@ -266,7 +266,7 @@ MLNodeLaplacian::Fapply (int amrlev, int mglev, MultiFab& out, const MultiFab& i
             });
         }
         if (!Gpu::inNoSyncRegion()) {
-            Gpu::streamSynchronize();
+          Gpu::streamSynchronize();
         }
     } else
 #endif
@@ -563,7 +563,9 @@ MLNodeLaplacian::Fsmooth (int amrlev, int mglev, MultiFab& sol, const MultiFab& 
             }
         }
 
-        Gpu::streamSynchronize();
+        if (!Gpu::inNoSyncRegion()) {
+          Gpu::streamSynchronize();
+        }
         nodalSync(amrlev, mglev, sol);
     }
     else
@@ -706,7 +708,9 @@ MLNodeLaplacian::Fsmooth (int amrlev, int mglev, MultiFab& sol, const MultiFab& 
             }
         }
 
-        Gpu::streamSynchronize();
+        if (!Gpu::inNoSyncRegion()) {
+          Gpu::streamSynchronize();
+        }
     }
 }
 

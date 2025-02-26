@@ -358,6 +358,9 @@ MLMGT<MF>::solve (const Vector<AMF*>& a_sol, const Vector<AMF const*>& a_rhs,
 {
     BL_PROFILE("MLMG::solve()");
 
+    Gpu::NoSyncRegion no_sync{};
+    Gpu::SingleStreamRegion single_stream{};
+
     if constexpr (std::is_same<AMF,MultiFab>()) {
         if (checkpoint_file != nullptr) {
             checkPoint(a_sol, a_rhs, a_tol_rel, a_tol_abs, checkpoint_file);

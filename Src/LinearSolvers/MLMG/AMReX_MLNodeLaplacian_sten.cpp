@@ -115,12 +115,10 @@ MLNodeLaplacian::buildStencil ()
                         {
                             const Box& btmp = ccbxg1 & sgfab_orig.box();
 
-                            cnfab.resize(ccbxg1, ncomp_c);
-                            Elixir cneli = cnfab.elixir();
+                            cnfab.resize(ccbxg1, ncomp_c, The_Async_Arena());
                             Array4<Real> const& cnarr = cnfab.array();
 
-                            sgfab.resize(ccbxg1);
-                            Elixir sgeli = sgfab.elixir();
+                            sgfab.resize(ccbxg1, 1, The_Async_Arena());
                             Array4<Real> const& sgarr = sgfab.array();
 
                             AMREX_HOST_DEVICE_FOR_3D(ccbxg1, i, j, k,
@@ -162,8 +160,7 @@ MLNodeLaplacian::buildStencil ()
                     {
                         const Box& btmp = ccbxg1 & sgfab_orig.box();
 
-                        sgfab.resize(ccbxg1);
-                        Elixir sgeli = sgfab.elixir();
+                        sgfab.resize(ccbxg1, 1, The_Async_Arena());
                         Array4<Real> const& sgarr = sgfab.array();
 
                         AMREX_HOST_DEVICE_FOR_3D(ccbxg1, i, j, k,
@@ -359,7 +356,9 @@ MLNodeLaplacian::buildStencil ()
         });
     }
 
-    Gpu::streamSynchronize();
+    if (!Gpu::inNoSyncRegion()) {
+      Gpu::streamSynchronize();
+    }
 
     // This is only needed at the bottom.
     m_s0_norm0[0].back() = m_stencil[0].back()->norm0(0,0) * m_normalization_threshold;

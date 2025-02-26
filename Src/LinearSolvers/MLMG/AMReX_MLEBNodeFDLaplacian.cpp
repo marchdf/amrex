@@ -302,7 +302,9 @@ MLEBNodeFDLaplacian::prepareForSolve ()
 
     AMREX_ASSERT(!isBottomSingular());
 
-    Gpu::streamSynchronize();
+    if (!Gpu::inNoSyncRegion()) {
+      Gpu::streamSynchronize();
+    }
 
 #if (AMREX_SPACEDIM == 2)
     if (m_rz) {
